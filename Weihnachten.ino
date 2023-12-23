@@ -1,20 +1,21 @@
-typedef struct {
-  uint8_t pinR, pinG, pinB;
-  uint8_t valR, valG, valB;
-  uint8_t requiredOffset, currentOffset;
-} RGBLed;
-typedef struct {
-  uint8_t pin, value;
-} LED;
+#include "rgbled.h"
+#include "pattern.h"
+#include "colorfade.h"
 
 #define BUTTON_PIN 2
 #define RGBLED_COUNT 3
 RGBLed RGBLEDs[RGBLED_COUNT] = {
-  { 3, 5, 6,    255, 0, 0,    0, 0 },
-  { 9, 10, 11,  0, 255, 0,    0, 0 },
-  { A0, A1, A2, 0, 0, 255,    1, 0 }
+  { 3, 5, 6,    255, 0, 0 },
+  { 9, 10, 11,  0, 255, 0 },
+  { A0, A1, A2, 0, 0, 255 }
 };
 bool isOn = true;
+
+#define PATTERN_COUNT 1
+Pattern* patterns[PATTERN_COUNT] = {
+  new ColorFade(RGBLEDs, RGBLED_COUNT)
+};
+int currentPattern = 0;
 
 void setup() {
   Serial.begin(9600);
@@ -24,39 +25,7 @@ void setup() {
     pinMode(RGBLEDs[i].pinR, OUTPUT);
     pinMode(RGBLEDs[i].pinG, OUTPUT);
     pinMode(RGBLEDs[i].pinB, OUTPUT);
-    RGBLEDs[i].requiredOffset += random(4);
-    Serial.println("initialized RGB (" + String(RGBLEDs[i].pinR) + ") with offset " + String(RGBLEDs[i].requiredOffset));
   }
-}
-
-void writeRGB(RGBLed led) {
-  analogWrite(led.pinR, led.valR);
-  analogWrite(led.pinG, led.valG);
-  analogWrite(led.pinB, led.valB);
-}
-void shift(RGBLed* led) {
-  if(led->currentOffset < led->requiredOffset) { // only process every requiredOffset-th shift
-    led->currentOffset++;
-    return;
-  }
-  led->currentOffset = 0;
-
-  if(led->valR < 255 && led->valG == 0 && led->valB == 0)   // (all zero -> fade in red)
-    led->valR++;
-  if(led->valR == 255 && led->valG < 255 && led->valB == 0) // red on -> fade in green
-    led->valG++;
-  if(led->valR > 0 && led->valG == 255 && led->valB == 0)   // green on -> fade out red
-    led->valR--;
-  if(led->valR == 0 && led->valG == 255 && led->valB < 255) // green on -> fade in blue
-    led->valB++;
-  if(led->valR == 0 && led->valG > 0 && led->valB == 255)   // blue on -> fade out green
-    led->valG--;
-  if(led->valR < 255 && led->valG == 0 && led->valB == 255) // blue on -> fade in red
-    led->valR++;
-  if(led->valR == 255 && led->valG == 0 && led->valB > 0)   // red on -> fade out blue
-    led->valB--;
-
-  writeRGB(*led);
 }
 
 void togglePwr() {
@@ -80,8 +49,24 @@ void togglePwr() {
 }
 void loop() {
   if(digitalRead(BUTTON_PIN)) {
-    togglePwr();
-    while(digitalRead(BUTTON_PIN)); // wait for button release
+    unsigned long start = millis();
+    while(digitalRead(BUTTON_PIN)) { // wait for button release
+      unsigned long duration = millis() - start;
+      if(isOn && duration > 2000) {  // 2 second delay to turn off
+        togglePwr();
+        while(digitalRead(BUTTON_PIN));
+        return;
+      }
+      if(!isOn) {                   // no delay to turn on
+        togglePwr();
+        while(digitalRead(BUTTON_PIN));
+        return;
+      }
+      delay(50);
+    } 
+    
+    currentPattern = (currentPattern + 1) % PATTERN_COUNT;
+    patterns[currentPattern]->setup();
   }
   if(!isOn) {
     delay(500);
@@ -89,7 +74,7 @@ void loop() {
   }
 
   for(int i = 0; i < RGBLED_COUNT; i++) {
-    shift(&RGBLEDs[i]);
+    patterns[currentPattern]->tick();
   }
   delay(1);
 }

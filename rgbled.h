@@ -7,3 +7,4 @@ typedef struct {
 } RGBLed;
 
 extern void writeRGB(RGBLed led);
+extern void setDefaults(RGBLed* leds, int ledcount);

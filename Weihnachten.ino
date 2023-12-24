@@ -1,6 +1,7 @@
 #include "rgbled.h"
 #include "pattern.h"
 #include "colorfade.h"
+#include "syncfade.h"
 
 #define BUTTON_PIN 2
 #define RGBLED_COUNT 3
@@ -11,9 +12,10 @@ RGBLed RGBLEDs[RGBLED_COUNT] = {
 };
 bool isOn = true;
 
-#define PATTERN_COUNT 1
+#define PATTERN_COUNT 2
 Pattern* patterns[PATTERN_COUNT] = {
-  new ColorFade(RGBLEDs, RGBLED_COUNT)
+  new ColorFade(RGBLEDs, RGBLED_COUNT),
+  new SyncFade(RGBLEDs, RGBLED_COUNT)
 };
 int currentPattern = 0;
 
@@ -26,25 +28,24 @@ void setup() {
     pinMode(RGBLEDs[i].pinG, OUTPUT);
     pinMode(RGBLEDs[i].pinB, OUTPUT);
   }
+  Serial.println("initialized all leds as output");
+  Serial.println("using Pattern 0");
 }
 
 void togglePwr() {
   isOn = !isOn;
   if(!isOn) {
-    for(int i = 0; i < RGBLED_COUNT; i++) {
-      RGBLEDs[i].valR = RGBLEDs[i].valG = RGBLEDs[i].valB = 0;
-      writeRGB(RGBLEDs[i]);
+    for(int i = 255; i >= 0; i--) {
+      for(int j = 0; j < RGBLED_COUNT; j++) { // fade off
+        if(RGBLEDs[j].valR > 0) RGBLEDs[j].valR--;
+        if(RGBLEDs[j].valG > 0) RGBLEDs[j].valG--;
+        if(RGBLEDs[j].valB > 0) RGBLEDs[j].valB--;
+        writeRGB(RGBLEDs[j]);
+        delay(5);
+      }
     }
   } else {
-    for(int i = 0; i < RGBLED_COUNT; i++) {
-      uint8_t r[] = {255, 0, 0},    //  v
-              g[] = {0, 255, 0},    //  
-              b[] = {0, 0, 255};    //  prevent exact synchronization
-      RGBLEDs[i].valR = r[i];       //  
-      RGBLEDs[i].valG = g[i];       //  
-      RGBLEDs[i].valB = b[i];       //  ^
-      writeRGB(RGBLEDs[i]);
-    }
+    setDefaults(RGBLEDs, RGBLED_COUNT);
   }
 }
 void loop() {
@@ -67,6 +68,7 @@ void loop() {
     
     currentPattern = (currentPattern + 1) % PATTERN_COUNT;
     patterns[currentPattern]->setup();
+    Serial.println("switched to Pattern " + String(currentPattern));
   }
   if(!isOn) {
     delay(500);
@@ -76,5 +78,5 @@ void loop() {
   for(int i = 0; i < RGBLED_COUNT; i++) {
     patterns[currentPattern]->tick();
   }
-  delay(1);
+  delay(25);
 }

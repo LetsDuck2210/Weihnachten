@@ -6,11 +6,12 @@ typedef struct {
 } Offset;
 
 class ColorFade: public Pattern {
-private:
+protected:
   RGBLed* leds;
   Offset* offsets;
   int ledcount;
 
+  ColorFade();
   void shift(RGBLed* led, Offset* offset);
 public:
   ColorFade(RGBLed* leds, int ledcount);

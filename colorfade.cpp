@@ -1,15 +1,19 @@
 #pragma once
+#include <Arduino.h>
 #include "colorfade.h"
+#include "rgbled.h"
 
 #define This ColorFade
 
 This::ColorFade(RGBLed* leds, int ledcount) : leds(leds), ledcount(ledcount) {
   offsets = new Offset[ledcount];
 }
+This::ColorFade() {}
 
 void This::setup() {
+  setDefaults(leds, ledcount);
   for(int i = 0; i < ledcount; i++) {
-    offsets[i].required = random(4);
+    offsets[i].required = random(4) + 1;
   }
 }
 

@@ -2,6 +2,7 @@
 #include "pattern.h"
 #include "colorfade.h"
 #include "syncfade.h"
+#include "staticpattern.h"
 
 #define BUTTON_PIN 2
 #define RGBLED_COUNT 3
@@ -12,10 +13,11 @@ RGBLed RGBLEDs[RGBLED_COUNT] = {
 };
 bool isOn = true;
 
-#define PATTERN_COUNT 2
+#define PATTERN_COUNT 3
 Pattern* patterns[PATTERN_COUNT] = {
   new ColorFade(RGBLEDs, RGBLED_COUNT),
-  new SyncFade(RGBLEDs, RGBLED_COUNT)
+  new SyncFade(RGBLEDs, RGBLED_COUNT),
+  new StaticPattern(RGBLEDs, RGBLED_COUNT)
 };
 int currentPattern = 0;
 
@@ -30,20 +32,14 @@ void setup() {
   }
   Serial.println("initialized all leds as output");
   Serial.println("using Pattern 0");
+
+  patterns[currentPattern]->setup();
 }
 
 void togglePwr() {
   isOn = !isOn;
   if(!isOn) {
-    for(int i = 255; i >= 0; i--) {
-      for(int j = 0; j < RGBLED_COUNT; j++) { // fade off
-        if(RGBLEDs[j].valR > 0) RGBLEDs[j].valR--;
-        if(RGBLEDs[j].valG > 0) RGBLEDs[j].valG--;
-        if(RGBLEDs[j].valB > 0) RGBLEDs[j].valB--;
-        writeRGB(RGBLEDs[j]);
-        delay(5);
-      }
-    }
+    smoothFade(RGBLEDs, RGBLED_COUNT, (uint8_t) 0, (uint8_t) 0, (uint8_t) 0);
   } else {
     setDefaults(RGBLEDs, RGBLED_COUNT);
   }

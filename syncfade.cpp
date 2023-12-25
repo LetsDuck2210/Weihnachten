@@ -9,7 +9,8 @@ This::SyncFade(RGBLed* leds, int ledcount): ColorFade(leds, ledcount) {}
 
 void This::setup() {
   smoothFade(leds, ledcount, 255, 0, 0);
+  uint8_t offs = random(3);
   for(int i = 0; i < ledcount; i++) {
-    offsets[i].required = 0;
+    offsets[i].required = offs;
   }
 }

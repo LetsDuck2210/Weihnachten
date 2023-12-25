@@ -8,7 +8,7 @@
 #define RGBLED_COUNT 3
 RGBLed RGBLEDs[RGBLED_COUNT] = {
   { 3, 5, 6,    255, 0, 0 },
-  { 9, 10, 11,  0, 255, 0 },
+  { 11, 10, 9,  0, 255, 0 },
   { A0, A1, A2, 0, 0, 255 }
 };
 bool isOn = true;

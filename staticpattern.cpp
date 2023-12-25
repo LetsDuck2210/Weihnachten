@@ -6,9 +6,6 @@
 
 This::StaticPattern(RGBLed* leds, int ledcount) : leds(leds), ledcount(ledcount) {}
 
-
-
-
 void This::setup() {
   smoothFade(leds, ledcount, 40, 255, 255);
 }

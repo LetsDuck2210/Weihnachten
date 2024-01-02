@@ -1,6 +1,6 @@
-#include "Arduino.h"
 #pragma once
 #include "rgbled.h"
+#include "Arduino.h"
 
 #define ANALOG_COUNT 8
 int values[ANALOG_COUNT];

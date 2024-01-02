@@ -1,4 +1,4 @@
-#pragma once;
+#pragma once
 #include <Arduino.h>
 #include "syncfade.h"
 #include "rgbled.h"

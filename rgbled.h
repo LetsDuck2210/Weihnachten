@@ -6,6 +6,8 @@ typedef struct {
   uint8_t valR, valG, valB;
 } RGBLed;
 
+extern void rgbled_tick();
+extern void anyPinAnalogWrite(uint8_t pin, int val);
 extern void writeRGB(RGBLed led);
 extern void setDefaults(RGBLed* leds, int ledcount);
 extern void smoothFade(RGBLed* leds, int ledcount, uint8_t rTarget, uint8_t gTarget, uint8_t bTarget);

@@ -3,6 +3,7 @@
 #include "colorfade.h"
 #include "syncfade.h"
 #include "staticpattern.h"
+#include <Timer.h>
 
 #define BUTTON_PIN 2
 #define RGBLED_COUNT 3
@@ -20,9 +21,9 @@ Pattern* patterns[PATTERN_COUNT] = {
   new StaticPattern(RGBLEDs, RGBLED_COUNT)
 };
 int currentPattern = 0;
-
+Timer loopTimer;
 void setup() {
-  Serial.begin(9600);
+  Serial.begin(115200);
   randomSeed(analogRead(0));
   pinMode(BUTTON_PIN, INPUT);
   for (int i = 0; i < RGBLED_COUNT; i++) {
@@ -34,6 +35,8 @@ void setup() {
   Serial.println("using Pattern 0");
 
   patterns[currentPattern]->setup();
+
+  loopTimer.start();
 }
 
 void togglePwr() {
@@ -45,34 +48,52 @@ void togglePwr() {
   }
 }
 void loop() {
-  if(digitalRead(BUTTON_PIN)) {
-    unsigned long start = millis();
-    while(digitalRead(BUTTON_PIN)) { // wait for button release
-      unsigned long duration = millis() - start;
-      if(isOn && duration > 2000) {  // 2 second delay to turn off
-        togglePwr();
-        while(digitalRead(BUTTON_PIN));
-        return;
-      }
-      if(!isOn) {                   // no delay to turn on
-        togglePwr();
-        while(digitalRead(BUTTON_PIN));
-        return;
-      }
-      delay(50);
-    } 
-    
-    currentPattern = (currentPattern + 1) % PATTERN_COUNT;
-    patterns[currentPattern]->setup();
-    Serial.println("switched to Pattern " + String(currentPattern));
-  }
-  if(!isOn) {
-    delay(500);
-    return;
-  }
+  if(loopTimer.read() % 25 == 0) {
+    if(digitalRead(BUTTON_PIN)) {
+      unsigned long start = millis();
+      while(digitalRead(BUTTON_PIN)) { // wait for button release
+        unsigned long duration = millis() - start;
+        if(isOn && duration > 2000) {  // 2 second delay to turn off
+          togglePwr();
+          while(digitalRead(BUTTON_PIN));
+          return;
+        }
+        if(!isOn) {                   // no delay to turn on
+          togglePwr();
+          while(digitalRead(BUTTON_PIN));
+          return;
+        }
+        delay(50);
+      } 
+      
+      currentPattern = (currentPattern + 1) % PATTERN_COUNT;
+      patterns[currentPattern]->setup();
+      Serial.println("switched to Pattern " + String(currentPattern));
+    }
+    if(!isOn) {
+      delay(500);
+      return;
+    }
 
-  for(int i = 0; i < RGBLED_COUNT; i++) {
-    patterns[currentPattern]->tick();
+    for(int i = 0; i < RGBLED_COUNT; i++) {
+      patterns[currentPattern]->tick();
+    }
+
+    if(Serial.available() && Serial.read() == 'p') {
+      int next = Serial.read();
+      if(!isDigit(next)) {
+        Serial.println("expected (int) after p");
+        return;
+      }
+      long pattern = String((char) next).toInt();
+      if(pattern >= 0 && pattern < PATTERN_COUNT) {
+        currentPattern = pattern;
+        patterns[currentPattern]->setup();
+        Serial.println("switched to Pattern " + String(currentPattern));
+      } else {
+        Serial.println("invalid pattern " + String(pattern));
+      }
+    }
   }
-  delay(25);
+  rgbled_tick();
 }

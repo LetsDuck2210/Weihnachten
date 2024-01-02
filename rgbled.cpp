@@ -1,10 +1,43 @@
+#include "Arduino.h"
 #pragma once
 #include "rgbled.h"
 
+#define ANALOG_COUNT 8
+int values[ANALOG_COUNT];
+unsigned long times[ANALOG_COUNT];
+void anyPinAnalogWrite(uint8_t pin, int val) {
+  if(pin >= A0 && pin <= A7) {
+    values[pin - A0] = map(val, 0, 255, 1000, 0);
+    times[pin - A0] = micros();
+  } else {
+    analogWrite(pin, val);
+  }
+}
+void rgbled_tick() {
+  for(uint8_t i = 0; i < ANALOG_COUNT; i++) {
+    uint8_t pin = i + A0;
+    if(values[i] >= 850) {
+      digitalWrite(pin, LOW);
+      continue;
+    }
+    if(values[i] == 0) {
+      digitalWrite(pin, HIGH);
+      continue;
+    }
+    unsigned long current = micros() - times[i];
+    if(current >= values[i])
+      digitalWrite(pin, HIGH);
+    if(current > 1000) {
+      digitalWrite(pin, LOW);
+      times[i] = micros();
+    }
+  }
+}
+
 void writeRGB(RGBLed led) {
-  analogWrite(led.pinR, led.valR);
-  analogWrite(led.pinG, led.valG);
-  analogWrite(led.pinB, led.valB);
+  anyPinAnalogWrite(led.pinR, led.valR);
+  anyPinAnalogWrite(led.pinG, led.valG);
+  anyPinAnalogWrite(led.pinB, led.valB);
 }
 
 void setDefaults(RGBLed* leds, int ledcount) {

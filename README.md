@@ -10,7 +10,7 @@ Available settings are:
 
      - *RGBLEDs* array with *RGBLed*: ( pin_r, pin_g, pin_b, val_r, val_g, val_b )
 
-     - values are semi-optional as they are automatically by the patterns on start
+     - values are semi-optional as they are automatically set by the patterns on start
 
 - default pattern on startup
     - *currentPattern* is index of *patterns* array

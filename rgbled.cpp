@@ -46,7 +46,6 @@ void setDefaults(RGBLed* leds, int ledcount) {
   // prevent exact synchronization
   for(int i = 0; i < ledcount; i++) {
     float s = (1.0 * i) / ledcount; // 1.0 * i  ->  i must be float
-    Serial.println("s: " + String(s));
     if(s >= 0.5) {
       r[i] = 0;
       uint8_t g0 = (s - 0.5) * 255;
@@ -98,6 +97,6 @@ void smoothFade(RGBLed* leds, int ledcount, uint8_t* rTargets, uint8_t* gTargets
       leds[j].valB = lerp(bStarts[j], bTargets[j], t);
       writeRGB(leds[j]);
     }
-    delay(2);
+    delay(1);
   }
 }

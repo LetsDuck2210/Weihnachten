@@ -25,19 +25,19 @@ void This::shift(RGBLed* led, Offset* offset) {
   offset->current = 0;
 
   if(led->valR < 255 && led->valG == 0 && led->valB == 0)   // (all zero -> fade in red)
-    led->valR++;
+    led->valR = min(led->valR + 4, 255);
   if(led->valR == 255 && led->valG < 255 && led->valB == 0) // red on -> fade in green
-    led->valG++;
+    led->valG = min(led->valG + 4, 255);
   if(led->valR > 0 && led->valG == 255 && led->valB == 0)   // green on -> fade out red
-    led->valR--;
+    led->valR = max(led->valR - 4, 0);
   if(led->valR == 0 && led->valG == 255 && led->valB < 255) // green on -> fade in blue
-    led->valB++;
+    led->valB = min(led->valB + 4, 255);
   if(led->valR == 0 && led->valG > 0 && led->valB == 255)   // blue on -> fade out green
-    led->valG--;
+    led->valG = max(led->valG - 4, 0);
   if(led->valR < 255 && led->valG == 0 && led->valB == 255) // blue on -> fade in red
-    led->valR++;
+    led->valR = min(led->valR + 4, 255);
   if(led->valR == 255 && led->valG == 0 && led->valB > 0)   // red on -> fade out blue
-    led->valB--;
+    led->valB = max(led->valB - 4, 0);
 
   writeRGB(*led);
 }

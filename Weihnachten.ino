@@ -5,12 +5,15 @@
 #include "staticpattern.h"
 #include <Timer.h>
 
-#define BUTTON_PIN 2
+#define u8 (uint8_t)
+#define SLEEPTIMER (3 * 60 * 60)  // 3 hours
+#define PWR_BUTTON_PIN 2          // button to control power (on/off/sleeptimer)
+#define FUNCTION_BUTTON_PIN 4     // button to control the running program
 #define RGBLED_COUNT 3
 RGBLed RGBLEDs[RGBLED_COUNT] = {
-  { 3, 5, 6,    255, 0, 0 },
+  { A2, 5, 6,    255, 0, 0 },
   { 11, 10, 9,  0, 255, 0 },
-  { A0, A1, A2, 0, 0, 255 }
+  { A0, 3, A1, 0, 0, 255 }
 };
 bool isOn = true;
 
@@ -25,59 +28,86 @@ Timer loopTimer;
 void setup() {
   Serial.begin(115200);
   randomSeed(analogRead(0));
-  pinMode(BUTTON_PIN, INPUT);
+  pinMode(PWR_BUTTON_PIN, INPUT);
+  pinMode(FUNCTION_BUTTON_PIN, INPUT);
   for (int i = 0; i < RGBLED_COUNT; i++) {
     pinMode(RGBLEDs[i].pinR, OUTPUT);
     pinMode(RGBLEDs[i].pinG, OUTPUT);
     pinMode(RGBLEDs[i].pinB, OUTPUT);
   }
-  Serial.println("initialized all leds as output");
-  Serial.println("using Pattern 0");
 
   patterns[currentPattern]->setup();
 
   loopTimer.start();
 }
 
+Timer sleeptimer;
 void togglePwr() {
   isOn = !isOn;
   if(!isOn) {
-    smoothFade(RGBLEDs, RGBLED_COUNT, (uint8_t) 0, (uint8_t) 0, (uint8_t) 0);
+    smoothFade(RGBLEDs, RGBLED_COUNT, u8 0, u8 0, u8 0);
   } else {
     setDefaults(RGBLEDs, RGBLED_COUNT);
   }
+  sleeptimer.stop();
+}
+
+void initSleeptimer() {
+  for(uint8_t x = 0; x < 2; x++) { // blink twice
+    smoothFade(RGBLEDs, RGBLED_COUNT, u8 255, u8 255, u8 255);
+    delay(200);
+    smoothFade(RGBLEDs, RGBLED_COUNT, u8 0, u8 0, u8 0);
+    delay(200);
+  }
+  patterns[currentPattern]->setup(); // go back to current pattern
+
+  Serial.println("sleeptimer will wait " + String(SLEEPTIMER) + "s");
+  sleeptimer.start();
 }
 void loop() {
-  if(loopTimer.read() % 25 == 0) {
-    if(digitalRead(BUTTON_PIN)) {
+  if(loopTimer.read() % 100 == 0) {
+    if(digitalRead(PWR_BUTTON_PIN)) {
+      Serial.println("PWR BUTTON DOWN");
       unsigned long start = millis();
-      while(digitalRead(BUTTON_PIN)) { // wait for button release
+      while(digitalRead(PWR_BUTTON_PIN)) { // wait for button release
         unsigned long duration = millis() - start;
         if(isOn && duration > 2000) {  // 2 second delay to turn off
           togglePwr();
-          while(digitalRead(BUTTON_PIN));
+          while(digitalRead(PWR_BUTTON_PIN));
+          Serial.println("PWR BUTTON UP -> TOGGLE OFF");
           return;
         }
         if(!isOn) {                   // no delay to turn on
           togglePwr();
-          while(digitalRead(BUTTON_PIN));
+          while(digitalRead(PWR_BUTTON_PIN));
+          Serial.println("PWR BUTTON UP -> TOGGLE ON");
           return;
         }
         delay(50);
-      } 
-      
-      currentPattern = (currentPattern + 1) % PATTERN_COUNT;
-      patterns[currentPattern]->setup();
-      Serial.println("switched to Pattern " + String(currentPattern));
+      }
+      Serial.println("PWR BUTTON UP -> SLEEPTIMER");
+
+      initSleeptimer();
     }
     if(!isOn) {
-      delay(500);
+      delay(300);
+      return;
+    }
+    if(sleeptimer.read() / 1000 >= SLEEPTIMER && sleeptimer.state() == RUNNING) {
+      togglePwr();
       return;
     }
 
-    for(int i = 0; i < RGBLED_COUNT; i++) {
-      patterns[currentPattern]->tick();
+    if(digitalRead(FUNCTION_BUTTON_PIN)) {
+      Serial.println("FUNCTION BUTTON DOWN");
+      currentPattern = (currentPattern + 1) % PATTERN_COUNT;
+      patterns[currentPattern]->setup();
+      Serial.println("switched to Pattern " + String(currentPattern));
+      while(digitalRead(FUNCTION_BUTTON_PIN));
+      Serial.println("FUNCTION BUTTON UP");
     }
+
+    patterns[currentPattern]->tick();
 
     if(Serial.available() && Serial.read() == 'p') {
       int next = Serial.read();

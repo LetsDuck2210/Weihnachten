@@ -4,7 +4,7 @@ All adjustable settings are in 'Weihnachten.ino'.
 
 Available settings are:
 
-- pins for button and rgbleds
+- pins for buttons and rgbleds
 
 - rgbleds (not tested with more or less than 3 rgbleds)
 
@@ -14,6 +14,8 @@ Available settings are:
 
 - default pattern on startup
     - *currentPattern* is index of *patterns* array
+
+- sleeptimer wait time
 
 ###### analog pins require software pulse width modulation which might flicker for small values
 

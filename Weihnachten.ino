@@ -52,8 +52,9 @@ void togglePwr() {
   sleeptimer.stop();
 }
 
-void initSleeptimer() {
-  for(uint8_t x = 0; x < 2; x++) { // blink twice
+void toggleSleeptimer() {
+  bool turnOn = sleeptimer.state() != RUNNING;
+  for(uint8_t x = 0; x < turnOn ? 2 : 1; x++) { // blink twice for on, once for off
     smoothFade(RGBLEDs, RGBLED_COUNT, u8 255, u8 255, u8 255);
     delay(200);
     smoothFade(RGBLEDs, RGBLED_COUNT, u8 0, u8 0, u8 0);
@@ -61,8 +62,13 @@ void initSleeptimer() {
   }
   patterns[currentPattern]->setup(); // go back to current pattern
 
-  Serial.println("sleeptimer will wait " + String(SLEEPTIMER) + "s");
-  sleeptimer.start();
+  if(turnOn) {
+    Serial.println("sleeptimer will wait " + String(SLEEPTIMER) + "s");
+    sleeptimer.start();
+  } else {
+    Serial.println("sleeptimer disabled");
+    sleeptimer.stop();
+  }
 }
 void loop() {
   if(loopTimer.read() % 25 == 0) {
@@ -87,7 +93,7 @@ void loop() {
       }
       Serial.println("PWR BUTTON UP -> SLEEPTIMER");
 
-      initSleeptimer();
+      toggleSleeptimer();
     }
     if(!isOn) {
       delay(300);

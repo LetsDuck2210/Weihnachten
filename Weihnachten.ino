@@ -54,7 +54,7 @@ void togglePwr() {
 
 void toggleSleeptimer() {
   bool turnOn = sleeptimer.state() != RUNNING;
-  for(uint8_t x = 0; x < turnOn ? 2 : 1; x++) { // blink twice for on, once for off
+  for(uint8_t x = 0; x < (turnOn ? 2 : 1); x++) { // blink twice for on, once for off
     smoothFade(RGBLEDs, RGBLED_COUNT, u8 255, u8 255, u8 255);
     delay(200);
     smoothFade(RGBLEDs, RGBLED_COUNT, u8 0, u8 0, u8 0);
@@ -83,7 +83,8 @@ void loop() {
           Serial.println("PWR BUTTON UP -> TOGGLE OFF");
           return;
         }
-        if(!isOn) {                   // no delay to turn on
+        if(!isOn) {                   // no delay to turn on56744
+        
           togglePwr();
           while(digitalRead(PWR_BUTTON_PIN));
           Serial.println("PWR BUTTON UP -> TOGGLE ON");

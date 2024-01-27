@@ -65,7 +65,7 @@ void initSleeptimer() {
   sleeptimer.start();
 }
 void loop() {
-  if(loopTimer.read() % 100 == 0) {
+  if(loopTimer.read() % 25 == 0) {
     if(digitalRead(PWR_BUTTON_PIN)) {
       Serial.println("PWR BUTTON DOWN");
       unsigned long start = millis();

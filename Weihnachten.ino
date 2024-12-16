@@ -3,9 +3,10 @@
 #include "colorfade.h"
 #include "syncfade.h"
 #include "staticpattern.h"
+#include "ui.h"
 #include <Timer.h>
 
-#define u8 (uint8_t)
+// === Settings === 
 #define SLEEPTIMER (3 * 60 * 60)  // 3 hours
 #define PWR_BUTTON_PIN 2          // button to control power (on/off/sleeptimer)
 #define FUNCTION_BUTTON_PIN 4     // button to control the running program
@@ -15,6 +16,8 @@ RGBLed RGBLEDs[RGBLED_COUNT] = {
   { 11, 10, 9,  0, 255, 0 },
   { A0, 3, A1, 0, 0, 255 }
 };
+// ================
+
 bool isOn = true;
 
 #define PATTERN_COUNT 3
@@ -25,6 +28,15 @@ Pattern* patterns[PATTERN_COUNT] = {
 };
 int currentPattern = 0;
 Timer loopTimer;
+
+#ifdef SINGLE_BUTTON
+UI* ui = new SingleButtonUI(PWR_BUTTON_PIN);
+#else
+UI* ui = new DoubleButtonUI(PWR_BUTTON_PIN, FUNCTION_BUTTON_PIN);
+#endif
+
+#define u8 (uint8_t)
+
 void setup() {
   Serial.begin(115200);
   randomSeed(analogRead(0));
@@ -70,67 +82,57 @@ void toggleSleeptimer() {
     sleeptimer.stop();
   }
 }
-void loop() {
-  if(loopTimer.read() % 25 == 0) {
-    if(digitalRead(PWR_BUTTON_PIN)) {
-      Serial.println("PWR BUTTON DOWN");
-      unsigned long start = millis();
-      while(digitalRead(PWR_BUTTON_PIN)) { // wait for button release
-        unsigned long duration = millis() - start;
-        if(isOn && duration > 2000) {  // 2 second delay to turn off
-          togglePwr();
-          while(digitalRead(PWR_BUTTON_PIN));
-          Serial.println("PWR BUTTON UP -> TOGGLE OFF");
-          return;
-        }
-        if(!isOn) {                   // no delay to turn on
-        
-          togglePwr();
-          while(digitalRead(PWR_BUTTON_PIN));
-          Serial.println("PWR BUTTON UP -> TOGGLE ON");
-          return;
-        }
-        delay(50);
-      }
-      Serial.println("PWR BUTTON UP -> SLEEPTIMER");
-
-      toggleSleeptimer();
-    }
-    if(!isOn) {
-      delay(300);
-      return;
-    }
-    if(sleeptimer.read() / 1000 >= SLEEPTIMER && sleeptimer.state() == RUNNING) {
-      togglePwr();
-      return;
-    }
-
-    if(digitalRead(FUNCTION_BUTTON_PIN)) {
-      Serial.println("FUNCTION BUTTON DOWN");
-      currentPattern = (currentPattern + 1) % PATTERN_COUNT;
-      patterns[currentPattern]->setup();
-      Serial.println("switched to Pattern " + String(currentPattern));
-      while(digitalRead(FUNCTION_BUTTON_PIN));
-      Serial.println("FUNCTION BUTTON UP");
-    }
-
-    patterns[currentPattern]->tick();
-
-    if(Serial.available() && Serial.read() == 'p') {
-      int next = Serial.read();
-      if(!isDigit(next)) {
-        Serial.println("expected (int) after p");
-        return;
-      }
-      long pattern = String((char) next).toInt();
-      if(pattern >= 0 && pattern < PATTERN_COUNT) {
-        currentPattern = pattern;
-        patterns[currentPattern]->setup();
-        Serial.println("switched to Pattern " + String(currentPattern));
-      } else {
-        Serial.println("invalid pattern " + String(pattern));
-      }
-    }
+void setPattern(uint8_t index) {
+  if(index >= PATTERN_COUNT) {
+    Serial.println("Invalid pattern: " + String(index));
+    return;
   }
+
+  currentPattern = index;
+  patterns[currentPattern]->setup();
+  Serial.println("Switched to pattern " + String(currentPattern));
+}
+void nextPattern() {
+  setPattern((currentPattern + 1) % PATTERN_COUNT);
+}
+void loop() {
   rgbled_tick();
+  if(loopTimer.read() % 25 != 0) 
+    return; 
+
+  Action action = ui->tick(isOn);
+  switch(action) {
+    case NOTHING:
+      break;
+    case POWER_TOGGLE:
+      togglePwr();
+      break;
+    case NEXT_PATTERN:
+      nextPattern();
+      break;
+    case SLEEPTIMER_TOGGLE:
+      toggleSleeptimer();
+      break;
+  }
+
+  if(!isOn) {
+    delay(300);
+    return;
+  }
+  if(sleeptimer.read() / 1000 >= SLEEPTIMER && sleeptimer.state() == RUNNING) {
+    togglePwr();
+    return;
+  }
+
+  patterns[currentPattern]->tick();
+
+  if(Serial.available() && Serial.read() == 'p') {
+    int next = Serial.read();
+    if(!isDigit(next)) {
+      Serial.println("expected (int) after p");
+      return;
+    }
+    uint8_t pattern = String((char) next).toInt();
+    setPattern(pattern);
+  }
 }

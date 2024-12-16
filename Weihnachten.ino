@@ -83,7 +83,7 @@ void loop() {
           Serial.println("PWR BUTTON UP -> TOGGLE OFF");
           return;
         }
-        if(!isOn) {                   // no delay to turn on56744
+        if(!isOn) {                   // no delay to turn on
         
           togglePwr();
           while(digitalRead(PWR_BUTTON_PIN));

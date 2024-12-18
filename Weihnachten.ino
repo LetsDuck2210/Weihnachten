@@ -51,6 +51,8 @@ void setup() {
   patterns[currentPattern]->setup();
 
   loopTimer.start();
+
+  Serial.println("setup done");
 }
 
 Timer sleeptimer;
@@ -100,19 +102,20 @@ void loop() {
   if(loopTimer.read() % 25 != 0) 
     return; 
 
+  struct {
+    void (*func)();
+    String name;
+  } actions[] = {
+    [NOTHING] = { .func = nullptr, .name = "Nothing" },
+    [POWER_TOGGLE] = { .func = togglePwr, .name = "Toggle Power" },
+    [NEXT_PATTERN] = { .func = nextPattern, .name = "Next Pattern" },
+    [SLEEPTIMER_TOGGLE] = { .func = toggleSleeptimer, .name = "Toggle Sleeptimer"}
+  };
+
   Action action = ui->tick(isOn);
-  switch(action) {
-    case NOTHING:
-      break;
-    case POWER_TOGGLE:
-      togglePwr();
-      break;
-    case NEXT_PATTERN:
-      nextPattern();
-      break;
-    case SLEEPTIMER_TOGGLE:
-      toggleSleeptimer();
-      break;
+  if(actions[action].func != nullptr) {
+    Serial.println("Executing Action: " + actions[action].name);
+    actions[action].func();
   }
 
   if(!isOn) {

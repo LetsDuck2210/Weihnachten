@@ -1,36 +1,100 @@
 # Weihnachten
 
-All adjustable settings are in 'Weihnachten.ino'.
+## Compilation
 
-Available settings are:
+This project includes a Makefile to build which will call to [arduino-cli](https://arduino.github.io/arduino-cli/1.1/). \
+Make targets are:
+- all
+- compile
+- upload
+- monitor
+
+Make Options are:
+- PORT
+- FLAGS
+
+### Examples:
+```bash
+# Compile, upload, monitor, default port (/dev/ttyUSB0)
+make
+
+# Compile, port /dev/tty.usbserial110 (macos)
+make PORT=/dev/tty.usbserial110 compile
+
+# Compile, upload, monitor, SingleButton-Mode, no pullup buttons, default port (/dev/ttyUSB0)
+make FLAGS="-DSINGLE_BUTTON -DUSE_PULLUP=0"
+```
+
+---
+<details>
+<summary>Settings without code changes (using build flags):</summary>
+
+To set these, run
+```bash
+make FLAGS="-D<FLAG1>[=<VALUE1>] -D<FLAG2>[=<VALUE2>]"
+```
+
+- Use single button mode instead of double button mode (SINGLE\_BUTTON)
+- Use pullup buttons (USE\_PULLUP=1)
+
+</details>
+
+
+<details>
+<summary>Settings with code changes:</summary>
+To set these, go to the Settings section in Weihnachten.ino
 
 - pins for buttons and rgbleds
-
 - rgbleds (not tested with more or less than 3 rgbleds)
-
-     - *RGBLEDs* array with *RGBLed*: ( pin_r, pin_g, pin_b, val_r, val_g, val_b )
-
+     - *RGBLEDs* array with *RGBLed*: ( pin\_r, pin\_g, pin\_b, val\_r, val\_g, val\_b )
      - values are semi-optional as they are automatically set by the patterns on start
-
 - default pattern on startup
     - *currentPattern* is index of *patterns* array
-
 - sleeptimer wait time
 
+</details>
+
 ###### analog pins require software pulse width modulation which might flicker for small values
+
+---
+
+## Usage:
+
+```mermaid
+flowchart TB
+
+  mode(Mode?) -- SingleButton --> sp(press?)
+  sp -- short --> ssOn(Is on?)
+  ssOn -- yes --> snextpat(Next pattern)
+  ssOn -- no --> sturnon(Turn on)
+
+  sp -- long --> slOn(Is on?)
+  slOn -- yes --> sturnoff(Turn off)
+  slOn -- no --> sturnon
+
+  mode -- DoubleButton --> db(button?)
+  db -- Power Button --> dpow(press?)
+  dpow -- short --> dpowsOn(Is on?)
+  dpowsOn -- yes --> togglesleep(Toggle Sleeptimer)
+  dpowsOn -- no --> dturnon(Turn on)
+
+  dpow -- long --> dpowlOn(Is on?)
+  dpowlOn -- yes --> dturnoff(Turn off)
+  dpowlOn -- no --> dturnon
+
+  db -- Function Button --> dfunOn(Is on?)
+  dfunOn -- yes --> dnextpat(Next pattern)
+```
+
+For example:
+- A short press in SingleButton-Mode while the device is on will switch to the next pattern.
+- A long press in DoubleButton-Mode on the PowerButton while the device is on will turn it off.
 
 ---
 
 Can connect to serial monitor with baud 115200 to debug and send commands.
 
 Available commands are:
-
 - p\<num>   // change to pattern number <num> (e.g. p0 changes to first pattern)
 
 ###### \n and \r will be ignored
-
----
-
-If on, the button will cycle through the patterns when pressed, and turn the lighting off if held.
-
-If off, the button will turn on the lighting if pressed or held.

@@ -52,4 +52,5 @@ public:
 
 private:
   static Action function_button_up(bool isPoweredOn, uint32_t duration);
+  static Action power_button_up(bool isPoweredOn, uint32_t duration);
 };

@@ -16,6 +16,7 @@ RGBLed RGBLEDs[RGBLED_COUNT] = {
   { 11, 10, 9,  0, 255, 0 },
   { A0, 3, A1, 0, 0, 255 }
 };
+#define USE_PULLUP 1
 // ================
 
 bool isOn = true;
@@ -40,8 +41,14 @@ UI* ui = new DoubleButtonUI(PWR_BUTTON_PIN, FUNCTION_BUTTON_PIN);
 void setup() {
   Serial.begin(115200);
   randomSeed(analogRead(0));
-  pinMode(PWR_BUTTON_PIN, INPUT);
-  pinMode(FUNCTION_BUTTON_PIN, INPUT);
+#if USE_PULLUP == 1
+  int button_mode = INPUT_PULLUP;
+#else
+  int button_mode = INPUT;
+#endif
+
+  pinMode(PWR_BUTTON_PIN, button_mode);
+  pinMode(FUNCTION_BUTTON_PIN, button_mode);
   for (int i = 0; i < RGBLED_COUNT; i++) {
     pinMode(RGBLEDs[i].pinR, OUTPUT);
     pinMode(RGBLEDs[i].pinG, OUTPUT);

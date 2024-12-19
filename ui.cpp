@@ -1,6 +1,13 @@
 #include "ui.h"
+#include "Arduino.h"
 
-bool buttonDown(uint8_t pin) { return digitalRead(pin); }
+bool buttonDown(uint8_t pin) {
+#if USE_PULLUP == 1
+  return !digitalRead(pin);
+#else
+  return digitalRead(pin);
+#endif
+}
 
 Action power_button_down(bool isPoweredOn, uint32_t duration) {
   if (duration >= 2000 || !isPoweredOn)

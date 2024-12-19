@@ -1,72 +1,78 @@
 #include "ui.h"
 
-bool buttonDown(uint8_t pin) {
-  return digitalRead(pin);
-}
-void waitForRelease(uint8_t pin) {
-  while(buttonDown(pin)) delay(10);
+bool buttonDown(uint8_t pin) { return digitalRead(pin); }
+
+Action power_button_down(bool isPoweredOn, uint32_t duration) {
+  if (duration >= 2000 || !isPoweredOn)
+    return POWER_TOGGLE;
+  return NOTHING;
 }
 
-PowerButton::PowerButton(uint8_t pin): button_pin(pin) {}
-Action PowerButton::tick(bool isPoweredOn) {
-  if(buttonDown(button_pin)) {
-    if(isPoweredOn) {
-      if(button_press_start == 0)
-        button_press_start = millis();
+ButtonHandler::ButtonHandler(uint8_t button_pin,
+                             Action (*button_down_handler)(bool, uint32_t),
+                             Action (*button_up_handler)(bool, uint32_t))
+    : button_pin(button_pin), button_down_handler(button_down_handler),
+      button_up_handler(button_up_handler) {}
+Action ButtonHandler::tick(bool isPoweredOn) {
+  if (buttonDown(button_pin)) {
+    if (button_down_start == 0)
+      button_down_start = millis();
 
-      if(button_was_released && millis() - button_press_start >= 2000) {
-        button_was_released = false;
-        return POWER_TOGGLE;
-      }
+    // button_down_handler will only be called until an action is returned,
+    // it will then wait until the button is released
+    if (last_action != NOTHING)
       return NOTHING;
-    }
 
-    if(button_was_released)
-      return POWER_TOGGLE;
-    return NOTHING;
+    if (button_down_handler == nullptr)
+      return NOTHING;
+
+    Action action =
+        button_down_handler(isPoweredOn, millis() - button_down_start);
+    if (action != NOTHING)
+      last_action = action;
+    return action;
   }
 
-  button_press_start = 0;
-  button_was_released = true;
-  
+  if (button_down_start == 0)
+    return NOTHING;
+
+  // This will only execute when the button was released after being held
+  button_down_start = 0;
+
+  Action _last_action = last_action;
+  last_action = NOTHING;
+
+  // button_up_handler will only be called if button_down_handler returned no
+  // action
+  if (_last_action == NOTHING) {
+    if (button_up_handler == nullptr)
+      return NOTHING;
+    return button_up_handler(isPoweredOn, millis() - button_down_start);
+  }
+
   return NOTHING;
 }
 
-SingleButtonUI::SingleButtonUI(uint8_t button_pin) : button_pin(button_pin), power_button(button_pin) { }
-Action SingleButtonUI::tick(bool isPoweredOn) {
-  Action powerButtonAction = power_button.tick(isPoweredOn);
-  if(powerButtonAction != NOTHING) {
-    button_was_pressed = false;
-    return powerButtonAction;
-  }
-
-  if(buttonDown(button_pin)) {
-    button_was_pressed = true;
-    return NOTHING;
-  }
-  if(button_was_pressed) {
-    button_was_pressed = false;
-    return NEXT_PATTERN;
-  }
-
-  return NOTHING;
+SingleButtonUI::SingleButtonUI(uint8_t button_pin)
+    : handler(button_pin, power_button_down, button_up) {}
+Action SingleButtonUI::tick(bool isPoweredOn) { return handler.tick(isPoweredOn); }
+Action SingleButtonUI::button_up(bool isPoweredOn, uint32_t duration) {
+  return NEXT_PATTERN;
 }
 
-
-
-DoubleButtonUI::DoubleButtonUI(uint8_t power_button_pin, uint8_t function_button_pin) 
-  : function_button_pin(function_button_pin), power_button(power_button_pin) { }
-
+DoubleButtonUI::DoubleButtonUI(uint8_t power_button_pin,
+                               uint8_t function_button_pin)
+    : power_button(power_button_pin, power_button_down, nullptr),
+      function_button(function_button_pin, nullptr, function_button_up) {}
 Action DoubleButtonUI::tick(bool isPoweredOn) {
-  Action powerButtonAction = power_button.tick(isPoweredOn);
-  if(powerButtonAction != NOTHING)
-    return powerButtonAction;
+  Action power_action = power_button.tick(isPoweredOn);
+  if (power_action != NOTHING)
+    return power_action;
 
-  if(isPoweredOn && buttonDown(function_button_pin)) {
-    waitForRelease(function_button_pin);
-    
+  return function_button.tick(isPoweredOn);
+}
+Action DoubleButtonUI::function_button_up(bool isPoweredOn, uint32_t duration) {
+  if (isPoweredOn)
     return NEXT_PATTERN;
-  }
-
   return NOTHING;
 }

@@ -52,7 +52,7 @@ void setup() {
 
   loopTimer.start();
 
-  Serial.println("setup done");
+  Serial.println(F("setup done"));
 }
 
 Timer sleeptimer;
@@ -77,22 +77,26 @@ void toggleSleeptimer() {
   patterns[currentPattern]->setup(); // go back to current pattern
 
   if(turnOn) {
-    Serial.println("sleeptimer will wait " + String(SLEEPTIMER) + "s");
+    Serial.print(F("sleeptimer will wait "));
+    Serial.print(SLEEPTIMER);
+    Serial.println(F("s"));
     sleeptimer.start();
   } else {
-    Serial.println("sleeptimer disabled");
+    Serial.println(F("sleeptimer disabled"));
     sleeptimer.stop();
   }
 }
 void setPattern(uint8_t index) {
   if(index >= PATTERN_COUNT) {
-    Serial.println("Invalid pattern: " + String(index));
+    Serial.print(F("Invalid pattern: "));
+    Serial.println(index);
     return;
   }
 
   currentPattern = index;
   patterns[currentPattern]->setup();
-  Serial.println("Switched to pattern " + String(currentPattern));
+  Serial.print(F("Switched to pattern "));
+  Serial.println(currentPattern);
 }
 void nextPattern() {
   setPattern((currentPattern + 1) % PATTERN_COUNT);
@@ -106,15 +110,18 @@ void loop() {
     void (*func)();
     String name;
   } actions[] = {
-    [NOTHING] = { .func = nullptr, .name = "Nothing" },
-    [POWER_TOGGLE] = { .func = togglePwr, .name = "Toggle Power" },
-    [NEXT_PATTERN] = { .func = nextPattern, .name = "Next Pattern" },
-    [SLEEPTIMER_TOGGLE] = { .func = toggleSleeptimer, .name = "Toggle Sleeptimer"}
+    [NOTHING] = { .func = nullptr, .name = F("Nothing") },
+    [POWER_TOGGLE] = { .func = togglePwr, .name = F("Toggle Power") },
+    [NEXT_PATTERN] = { .func = nextPattern, .name = F("Next Pattern") },
+    [SLEEPTIMER_TOGGLE] = { .func = toggleSleeptimer, .name = F("Toggle Sleeptimer") }
   };
 
   Action action = ui->tick(isOn);
   if(actions[action].func != nullptr) {
-    Serial.println("Executing Action: " + actions[action].name);
+    Serial.print(F("Executing Action "));
+    Serial.print(action);
+    Serial.print(F(": "));
+    Serial.println(actions[action].name);
     actions[action].func();
   }
 
@@ -132,7 +139,7 @@ void loop() {
   if(Serial.available() && Serial.read() == 'p') {
     int next = Serial.read();
     if(!isDigit(next)) {
-      Serial.println("expected (int) after p");
+      Serial.println(F("expected (int) after p"));
       return;
     }
     uint8_t pattern = String((char) next).toInt();

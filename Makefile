@@ -7,11 +7,12 @@ ifndef FLAGS
 	FLAGS =
 endif
 BAUDRATE = 115200
+JOBS=$(shell nproc)
 
 all: compile upload monitor
 
 compile:
-	arduino-cli compile --build-property build.extra_flags=$(FLAGS)
+	arduino-cli compile -j $(JOBS) --build-property build.extra_flags=$(FLAGS)
 
 upload:
 	arduino-cli upload -p $(PORT)

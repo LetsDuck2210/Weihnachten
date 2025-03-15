@@ -2,24 +2,35 @@
 
 ## Compilation
 
-This project includes a Makefile to build which will call to [arduino-cli](https://arduino.github.io/arduino-cli/1.1/). \
+This project includes a Makefile which will call [arduino-cli](https://arduino.github.io/arduino-cli/1.1/). \
 Make targets are:
 - all
 - compile
 - upload
 - monitor
+- configure
+- select\_port
+- select\_flags
 
 Make Options are:
-- PORT
-- FLAGS
+- PORT\*
+- FLAGS\*
+- BAUDRATE (only used for monitor target)
+
+(\*) Will use environment variable of the same name if set
 
 ### Examples:
 ```bash
 # Compile, upload, monitor, default port (/dev/ttyUSB0)
 make
 
-# Compile, port /dev/tty.usbserial110 (macos)
-make PORT=/dev/tty.usbserial110 compile
+# Select a connected board and flags interactively using fzf
+eval $(make configure)
+# OR
+eval `make configure`
+
+# Compile and upload to port /dev/tty.usbserial110 (macos)
+make PORT=/dev/tty.usbserial110 compile upload
 
 # Compile, upload, monitor, SingleButton-Mode, no pullup buttons, default port (/dev/ttyUSB0)
 make FLAGS="-DSINGLE_BUTTON -DUSE_PULLUP=0"
@@ -34,8 +45,10 @@ To set these, run
 make FLAGS="-D<FLAG1>[=<VALUE1>] -D<FLAG2>[=<VALUE2>]"
 ```
 
-- Use single button mode instead of double button mode (SINGLE\_BUTTON)
-- Use pullup buttons (USE\_PULLUP=1)
+Available flags are:
+
+- Use single button mode instead of double button mode (SINGLE\_BUTTON; default: unset)
+- Use pullup buttons (USE\_PULLUP; default: 1)
 
 </details>
 
@@ -54,7 +67,7 @@ To set these, go to the Settings section in Weihnachten.ino
 
 </details>
 
-###### analog pins require software pulse width modulation which might flicker for small values
+**analog pins require software pulse width modulation which might flicker for small values**
 
 ---
 
